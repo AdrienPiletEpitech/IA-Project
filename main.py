@@ -2,6 +2,25 @@ import cv2
 import numpy as np
 import argparse
 import pyautogui
+import json
+
+class Data:
+    def __init__(self):
+        self.coordinates = []
+
+    def add_circle_coordinate(self, matches):
+        for match in matches:
+            x, y = match
+            self.coordinates.append({"x": x, "y": y})
+
+    def dump_to_json(self, file_path):
+        data = []
+        for coord in self.coordinates:
+            data.append({"x": int(coord["x"]), "y": int(coord["y"])})
+
+        with open(file_path, "w") as f:
+            json.dump(data, f)
+
 
 
 def print_coordinates(matches):
@@ -13,7 +32,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-t", "--template", required=True, help="Path to the image template")
     args = vars(ap.parse_args())
-
+    data = Data()
     SCREEN_SIZE = (800, 600)
 
     template = cv2.imread(args["template"], cv2.IMREAD_GRAYSCALE)
@@ -22,32 +41,35 @@ def main():
     w, h = template.shape[::-1]
     threshold = 0.3
 
-    while True:
-        img = pyautogui.screenshot(region=(0,0, 800, 600))
-        frame = np.array(img)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        res = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED)
+    if cv2.waitKey(1) == ord('k'):
+        while True:
+            img = pyautogui.screenshot(region=(0,0, 800, 600))
+            frame = np.array(img)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            res = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED)
 
-        threshold = 0.3#
+            threshold = 0.3#
 
-        loc = np.where(res >= threshold)
-        matches = list(zip(*loc[::-1]))
+            loc = np.where(res >= threshold)
+            matches = list(zip(*loc[::-1]))
 
-        if len(matches) > 0:
-            print_coordinates(matches)
-
-        for pt in zip(*loc[::-1]):
-            cv2.rectangle(frame, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(1) == ord('q'):
-            break
+            if len(matches) > 0:
+                print_coordinates(matches)
+                data.add_circle_coordinate(matches)
+            for pt in zip(*loc[::-1]):
+                cv2.rectangle(frame, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
     while True:
         if cv2.waitKey(1) == ord('q'):
             break
     cv2.destroyAllWindows()
+    data.dump_to_json("E:\data ia\data.json")
 
 if __name__ == '__main__':
     main()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 i=0
+##(-(-(--)-)-)
